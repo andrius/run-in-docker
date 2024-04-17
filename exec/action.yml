@@ -1,0 +1,16 @@
+name: "Execute Command in Docker Container"
+description: "Executes a command in a running Docker container."
+inputs:
+  container_name:
+    description: "Name of the existing Docker container"
+    required: true
+  workdir:
+    description: "Working directory inside the container"
+    required: true
+    default: "${{ github.workspace }}"
+  run:
+    description: "Commands to execute inside the container"
+    required: true
+runs:
+  using: "node20"
+  main: "exec/index.js"
