@@ -1,0 +1,28 @@
+name: "Start Docker Container"
+description: "Starts a Docker container optionally executing shell commands."
+inputs:
+  image:
+    description: "Docker image to use"
+    required: true
+  custom_options:
+    description: "Custom Docker run options"
+    required: false
+  container_name:
+    description: "Optional custom name for the running container"
+    required: false
+  workdir:
+    description: "Working directory inside the container"
+    required: false
+    default: "${{ github.workspace }}"
+  run:
+    description: "Optional commands to execute inside the container"
+    required: false
+
+outputs:
+  container_name:
+    description: "Name of the running container"
+
+runs:
+  using: "node20"
+  main: "start/index.js"
+  post: "cleanup/index.js"

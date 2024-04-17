@@ -1,0 +1,90 @@
+name: Test Docker Actions
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test run-in-docker actions
+    steps:
+      # Start container without initial commands
+      - name: Start Docker Container (No Commands)
+        id: no-cmd
+        uses: andrius/run-in-docker/start@main
+        with:
+          image: bash
+          container_name: test-container-1
+
+      # Start container with initial commands
+      - name: Start Docker Container (With Commands)
+        id: with-cmd
+        uses: andrius/run-in-docker/start@main
+        with:
+          image: bash
+          container_name: test-container-2
+          run: |
+            env # should print environment variables and mask secrets
+            echo 'Hello from container 2'
+
+      # Start container without assigned container name
+      - name: Start Docker Container (No Container Name)
+        id: no-name
+        uses: andrius/run-in-docker/start@main
+        with:
+          image: bash
+
+      # Try to start a container with a non-existing image (should fail)
+      - name: Start Docker Container (Non-Existing Image)
+        # the step will fail but the job will continue, this is to test the action
+        continue-on-error: true
+        uses: andrius/run-in-docker/start@main
+        with:
+          image: this-image-does-not-exist
+          container_name: test-container-3
+
+      # Check outputs
+      - name: Check Outputs from Start Action
+        run: |
+          echo "Container Name 1: ${{ steps.no-cmd.outputs.container_name }}"
+          echo "Container Name 2: ${{ steps.with-cmd.outputs.container_name }}"
+          echo "Container w/o name: ${{ steps.no-name.outputs.container_name }}"
+
+      # Execute command in container
+      - name: Execute Command in Running Container
+        uses: andrius/run-in-docker/exec@main
+        with:
+          container_name: test-container-1
+          run: echo 'Hello from container 1'
+
+      - name: Fail to Execute Command in Running Container
+        # the step will fail but the job will continue, this is to test the action
+        continue-on-error: true
+        uses: andrius/run-in-docker/exec@main
+        with:
+          container_name: test-container-2
+          run: exit 1
+
+      # Testing integration with the GitHub environment
+      - name: Test GitHub environment integration
+        id: github-env
+        uses: andrius/run-in-docker/exec@main
+        with:
+          container_name: test-container-2
+          run: |
+            set -x
+            env | sort
+            echo "I were triggered by the GitHub ${{ github.actor }} user"
+            ls -lai ${GITHUB_ENV}
+            ls -lai ${GITHUB_OUTPUT}
+            echo "FOOBAR1=foobar1" >> ${GITHUB_ENV}
+            echo "FOOBAR2=foobar2" >> ${GITHUB_OUTPUT}
+
+      # Check outputs from the docker exec action
+      - name: Check GitHub integration outputs
+        run: |
+          echo "FOOBAR1: ${{ env.FOOBAR1 }}"
+          echo "FOOBAR1: ${FOOBAR1}"
+          echo "FOOBAR2: ${{ steps.github-env.outputs.FOOBAR2 }}"
